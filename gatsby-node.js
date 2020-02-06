@@ -25,6 +25,15 @@ var _gatsbySourceFilesystem = require("gatsby-source-filesystem");
 var _pathToRegexp = _interopRequireDefault(require("path-to-regexp"));
 
 exports.onCreateWebpackConfig = _gatsbyNode.onCreateWebpackConfig;
+var accessToken;
+
+exports.onPreInit = function (_, options) {
+  accessToken = options.accessToken;
+
+  if (!options.previews) {
+    delete options.accessToken;
+  }
+};
 
 exports.onCreatePage = function (_ref) {
   var page = _ref.page,
@@ -46,7 +55,7 @@ exports.sourceNodes = function (ref, options) {
       return (0, _utils.PrismicLink)({
         uri: "https://".concat(options.repositoryName, ".prismic.io/graphql"),
         credentials: 'same-origin',
-        accessToken: options.accessToken,
+        accessToken: accessToken,
         customRef: options.prismicRef
       });
     }
