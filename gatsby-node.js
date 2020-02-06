@@ -1,44 +1,16 @@
-"use strict";
+import path from 'path';
+import { getRootQuery } from 'gatsby-source-graphql-universal/getRootQuery';
+import { onCreateWebpackConfig, sourceNodes } from 'gatsby-source-graphql-universal/gatsby-node';
+import { fieldName, PrismicLink, typeName } from './utils';
+import { createRemoteFileNode } from 'gatsby-source-filesystem';
+import pathToRegexp from 'path-to-regexp';
+exports.onCreateWebpackConfig = onCreateWebpackConfig;
 
-var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
-
-var _slicedToArray2 = _interopRequireDefault(require("@babel/runtime/helpers/slicedToArray"));
-
-var _regenerator = _interopRequireDefault(require("@babel/runtime/regenerator"));
-
-var _toConsumableArray2 = _interopRequireDefault(require("@babel/runtime/helpers/toConsumableArray"));
-
-var _asyncToGenerator2 = _interopRequireDefault(require("@babel/runtime/helpers/asyncToGenerator"));
-
-var _objectSpread2 = _interopRequireDefault(require("@babel/runtime/helpers/objectSpread"));
-
-var _path = _interopRequireDefault(require("path"));
-
-var _getRootQuery = require("gatsby-source-graphql-universal/getRootQuery");
-
-var _gatsbyNode = require("gatsby-source-graphql-universal/gatsby-node");
-
-var _utils = require("./utils");
-
-var _gatsbySourceFilesystem = require("gatsby-source-filesystem");
-
-var _pathToRegexp = _interopRequireDefault(require("path-to-regexp"));
-
-exports.onCreateWebpackConfig = _gatsbyNode.onCreateWebpackConfig;
-var accessToken;
-
-exports.onPreInit = function (_, options) {
-  accessToken = options.accessToken;
-
-  if (!options.previews) {
-    delete options.accessToken;
-  }
-};
-
-exports.onCreatePage = function (_ref) {
-  var page = _ref.page,
-      actions = _ref.actions;
-  var rootQuery = (0, _getRootQuery.getRootQuery)(page.componentPath);
+exports.onCreatePage = ({
+  page,
+  actions
+}) => {
+  const rootQuery = getRootQuery(page.componentPath);
   page.context = page.context || {};
 
   if (rootQuery) {
@@ -47,27 +19,26 @@ exports.onCreatePage = function (_ref) {
   }
 };
 
-exports.sourceNodes = function (ref, options) {
-  var opts = (0, _objectSpread2.default)({
-    fieldName: _utils.fieldName,
-    typeName: _utils.typeName,
-    createLink: function createLink() {
-      return (0, _utils.PrismicLink)({
-        uri: "https://".concat(options.repositoryName, ".prismic.io/graphql"),
-        credentials: 'same-origin',
-        accessToken: accessToken,
-        customRef: options.prismicRef
-      });
-    }
-  }, options);
-  return (0, _gatsbyNode.sourceNodes)(ref, opts);
+exports.sourceNodes = (ref, options) => {
+  const opts = {
+    fieldName,
+    typeName,
+    createLink: () => PrismicLink({
+      uri: `https://${options.repositoryName}.prismic.io/graphql`,
+      credentials: 'same-origin',
+      accessToken: options.accessToken,
+      customRef: options.prismicRef
+    }),
+    ...options
+  };
+  return sourceNodes(ref, opts);
 };
 
 function createGeneralPreviewPage(createPage, options) {
-  var previewPath = options.previewPath || '/preview';
+  const previewPath = options.previewPath || '/preview';
   createPage({
     path: previewPath.replace(/^\//, ''),
-    component: _path.default.resolve(_path.default.join(__dirname, 'components', 'PreviewPage.js')),
+    component: path.resolve(path.join(__dirname, 'components', 'PreviewPage.js')),
     context: {
       prismicPreviewPage: true
     }
@@ -75,16 +46,16 @@ function createGeneralPreviewPage(createPage, options) {
 }
 
 function createDocumentPreviewPage(createPage, page, lang) {
-  var rootQuery = (0, _getRootQuery.getRootQuery)(page.component);
+  const rootQuery = getRootQuery(page.component);
   createPage({
     path: page.path,
     matchPath: process.env.NODE_ENV === 'production' ? undefined : page.match,
     component: page.component,
     context: {
-      rootQuery: rootQuery,
+      rootQuery,
       id: '',
       uid: '',
-      lang: lang,
+      lang,
       paginationPreviousUid: '',
       paginationPreviousLang: '',
       paginationNextUid: '',
@@ -106,46 +77,44 @@ function createDocumentPreviewPage(createPage, page, lang) {
  */
 
 
-function createDocumentPath(pageOptions, node, _ref2) {
-  var defaultLang = _ref2.defaultLang,
-      shortenUrlLangs = _ref2.shortenUrlLangs;
-  var pathKeys = [];
-  var pathTemplate = pageOptions.match || pageOptions.path;
-  (0, _pathToRegexp.default)(pathTemplate, pathKeys);
-  var langKey = pathKeys.find(function (key) {
-    return key.name === 'lang';
-  });
-  var isLangOptional = !!(langKey && langKey.optional);
-
-  var toPath = _pathToRegexp.default.compile(pathTemplate);
-
-  var documentLang = node._meta.lang;
-  var isDocumentLangDefault = documentLang === defaultLang;
-  var shouldExcludeLangInPath = isLangOptional && isDocumentLangDefault;
-  var displayedLang = shortenUrlLangs ? documentLang.slice(0, 2) : documentLang;
-  var lang = shouldExcludeLangInPath ? null : displayedLang;
-  var params = (0, _objectSpread2.default)({}, node._meta, {
-    lang: lang
-  });
-  var path = toPath(params);
+function createDocumentPath(pageOptions, node, {
+  defaultLang,
+  shortenUrlLangs
+}) {
+  const pathKeys = [];
+  const pathTemplate = pageOptions.match || pageOptions.path;
+  pathToRegexp(pathTemplate, pathKeys);
+  const langKey = pathKeys.find(key => key.name === 'lang');
+  const isLangOptional = !!(langKey && langKey.optional);
+  const toPath = pathToRegexp.compile(pathTemplate);
+  const documentLang = node._meta.lang;
+  const isDocumentLangDefault = documentLang === defaultLang;
+  const shouldExcludeLangInPath = isLangOptional && isDocumentLangDefault;
+  const displayedLang = shortenUrlLangs ? documentLang.slice(0, 2) : documentLang;
+  const lang = shouldExcludeLangInPath ? null : displayedLang;
+  const params = { ...node._meta,
+    lang
+  };
+  const path = toPath(params);
   return path === '' ? '/' : path;
 }
 
 function createDocumentPages(createPage, edges, options, page) {
   // Cycle through each document returned from query...
-  edges.forEach(function (_ref3, index) {
-    var cursor = _ref3.cursor,
-        node = _ref3.node;
-    var previousNode = edges[index - 1] && edges[index - 1].node;
-    var nextNode = edges[index + 1] && edges[index + 1].node; // ...and create the page
+  edges.forEach(({
+    cursor,
+    node
+  }, index) => {
+    const previousNode = edges[index - 1] && edges[index - 1].node;
+    const nextNode = edges[index + 1] && edges[index + 1].node; // ...and create the page
 
     createPage({
       path: createDocumentPath(page, node, options),
       component: page.component,
-      context: (0, _objectSpread2.default)({
-        rootQuery: (0, _getRootQuery.getRootQuery)(page.component)
-      }, node._meta, {
-        cursor: cursor,
+      context: {
+        rootQuery: getRootQuery(page.component),
+        ...node._meta,
+        cursor,
         paginationPreviousMeta: previousNode ? previousNode._meta : null,
         paginationPreviousUid: previousNode ? previousNode._meta.uid : '',
         paginationPreviousLang: previousNode ? previousNode._meta.lang : '',
@@ -154,223 +123,176 @@ function createDocumentPages(createPage, edges, options, page) {
         paginationNextLang: nextNode ? nextNode._meta.lang : '',
         // pagination helpers for overcoming backwards pagination issues cause by Prismic's 20-document query limit
         lastQueryChunkEndCursor: edges[index - 1] ? edges[index - 1].endCursor : ''
-      })
+      }
     });
   });
 }
 
-var getDocumentsQuery = function getDocumentsQuery(_ref4) {
-  var documentType = _ref4.documentType,
-      sortType = _ref4.sortType;
-  return "\n  query AllPagesQuery ($after: String, $lang: String, $sortBy: ".concat(sortType, ") {\n    prismic {\n      ").concat(documentType, " (\n        first: 20\n        after: $after\n        sortBy: $sortBy\n        lang: $lang\n      ) {\n        totalCount\n        pageInfo {\n          hasNextPage\n          endCursor\n        }\n        edges {\n          cursor\n          node {\n            _meta {\n              id\n              lang\n              uid\n              type\n              alternateLanguages {\n                id\n                lang\n                type\n                uid\n              }\n            }\n          }\n        }\n      }\n    }\n  }\n");
-};
-
-exports.createPages =
-/*#__PURE__*/
-function () {
-  var _ref6 = (0, _asyncToGenerator2.default)(
-  /*#__PURE__*/
-  _regenerator.default.mark(function _callee2(_ref5, options) {
-    var graphql, createPage, createPagesForType, _createPagesForType, pages, pageCreators;
-
-    return _regenerator.default.wrap(function _callee2$(_context2) {
-      while (1) {
-        switch (_context2.prev = _context2.next) {
-          case 0:
-            _createPagesForType = function _ref9() {
-              _createPagesForType = (0, _asyncToGenerator2.default)(
-              /*#__PURE__*/
-              _regenerator.default.mark(function _callee(page, lang) {
-                var endCursor,
-                    documents,
-                    documentType,
-                    sortType,
-                    query,
-                    _ref7,
-                    data,
-                    errors,
-                    response,
-                    edges,
-                    newEndCursor,
-                    _args = arguments;
-
-                return _regenerator.default.wrap(function _callee$(_context) {
-                  while (1) {
-                    switch (_context.prev = _context.next) {
-                      case 0:
-                        endCursor = _args.length > 2 && _args[2] !== undefined ? _args[2] : '';
-                        documents = _args.length > 3 && _args[3] !== undefined ? _args[3] : [];
-                        // Prepare and execute query
-                        documentType = "all".concat(page.type, "s");
-                        sortType = "PRISMIC_Sort".concat(page.type, "y");
-                        query = getDocumentsQuery({
-                          documentType: documentType,
-                          sortType: sortType
-                        });
-                        _context.next = 7;
-                        return graphql(query, {
-                          after: endCursor,
-                          lang: lang || null,
-                          sortBy: page.sortBy
-                        });
-
-                      case 7:
-                        _ref7 = _context.sent;
-                        data = _ref7.data;
-                        errors = _ref7.errors;
-
-                        if (!(errors && errors.length)) {
-                          _context.next = 12;
-                          break;
-                        }
-
-                        throw errors[0];
-
-                      case 12:
-                        response = data.prismic[documentType];
-                        edges = page.filter ? response.edges.filter(page.filter) : response.edges; // Add last end cursor to all edges to enable pagination context when creating pages
-
-                        edges.forEach(function (edge) {
-                          return edge.endCursor = endCursor;
-                        }); // Stage documents for page creation
-
-                        documents = [].concat((0, _toConsumableArray2.default)(documents), (0, _toConsumableArray2.default)(edges));
-
-                        if (!response.pageInfo.hasNextPage) {
-                          _context.next = 22;
-                          break;
-                        }
-
-                        newEndCursor = response.pageInfo.endCursor;
-                        _context.next = 20;
-                        return createPagesForType(page, lang, newEndCursor, documents);
-
-                      case 20:
-                        _context.next = 24;
-                        break;
-
-                      case 22:
-                        createDocumentPreviewPage(createPage, page, lang);
-                        createDocumentPages(createPage, documents, options, page);
-
-                      case 24:
-                      case "end":
-                        return _context.stop();
-                    }
-                  }
-                }, _callee);
-              }));
-              return _createPagesForType.apply(this, arguments);
-            };
-
-            createPagesForType = function _ref8(_x3, _x4) {
-              return _createPagesForType.apply(this, arguments);
-            };
-
-            graphql = _ref5.graphql, createPage = _ref5.actions.createPage;
-            createGeneralPreviewPage(createPage, options);
-            /**
-             * Helper that recursively queries GraphQL to collect all documents for the given
-             * page type. Once all documents are collected, it creates pages for them all.
-             * Prismic GraphQL queries only return up to 20 results per query)
-             */
-
-            // Prepare to create all the pages
-            pages = options.pages || [];
-            pageCreators = []; // Create pageCreator promises for each page/language combination
-
-            pages.forEach(function (page) {
-              var langs = page.langs || options.langs || options.defaultLang && [options.defaultLang];
-
-              if (langs) {
-                langs.forEach(function (lang) {
-                  return pageCreators.push(createPagesForType(page, lang));
-                });
-              } else {
-                pageCreators.push(createPagesForType(page));
+const getDocumentsQuery = ({
+  documentType,
+  sortType
+}) => `
+  query AllPagesQuery ($after: String, $lang: String, $sortBy: ${sortType}) {
+    prismic {
+      ${documentType} (
+        first: 20
+        after: $after
+        sortBy: $sortBy
+        lang: $lang
+      ) {
+        totalCount
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        edges {
+          cursor
+          node {
+            _meta {
+              id
+              lang
+              uid
+              type
+              alternateLanguages {
+                id
+                lang
+                type
+                uid
               }
-            }); // Run all pageCreators simultaneously
-
-            _context2.next = 9;
-            return Promise.all(pageCreators);
-
-          case 9:
-          case "end":
-            return _context2.stop();
+            }
+          }
         }
       }
-    }, _callee2);
-  }));
+    }
+  }
+`;
 
-  return function (_x, _x2) {
-    return _ref6.apply(this, arguments);
-  };
-}();
+exports.createPages = async ({
+  graphql,
+  actions: {
+    createPage
+  }
+}, options) => {
+  createGeneralPreviewPage(createPage, options);
+  /**
+   * Helper that recursively queries GraphQL to collect all documents for the given
+   * page type. Once all documents are collected, it creates pages for them all.
+   * Prismic GraphQL queries only return up to 20 results per query)
+   */
 
-exports.createResolvers = function (_ref10, _ref11) {
-  var actions = _ref10.actions,
-      cache = _ref10.cache,
-      createNodeId = _ref10.createNodeId,
-      createResolvers = _ref10.createResolvers,
-      store = _ref10.store,
-      reporter = _ref10.reporter;
-  var _ref11$sharpKeys = _ref11.sharpKeys,
-      sharpKeys = _ref11$sharpKeys === void 0 ? [/image|photo|picture/] : _ref11$sharpKeys;
-  var createNode = actions.createNode;
-  var state = store.getState();
+  async function createPagesForType(page, lang, endCursor = '', documents = []) {
+    // Prepare and execute query
+    const documentType = `all${page.type}s`;
+    const sortType = `PRISMIC_Sort${page.type}y`;
+    const query = getDocumentsQuery({
+      documentType,
+      sortType
+    });
+    const {
+      data,
+      errors
+    } = await graphql(query, {
+      after: endCursor,
+      lang: lang || null,
+      sortBy: page.sortBy
+    });
 
-  var _state$schemaCustomiz = (0, _slicedToArray2.default)(state.schemaCustomization.thirdPartySchemas, 1),
-      _state$schemaCustomiz2 = _state$schemaCustomiz[0],
-      prismicSchema = _state$schemaCustomiz2 === void 0 ? {} : _state$schemaCustomiz2;
+    if (errors && errors.length) {
+      throw errors[0];
+    }
 
-  var typeMap = prismicSchema._typeMap;
-  var resolvers = {};
+    const response = data.prismic[documentType];
+    const edges = page.filter ? response.edges.filter(page.filter) : response.edges; // Add last end cursor to all edges to enable pagination context when creating pages
 
-  for (var _typeName in typeMap) {
-    var typeEntry = typeMap[_typeName];
-    var typeFields = typeEntry && typeEntry.getFields && typeEntry.getFields() || {};
-    var typeResolver = {};
+    edges.forEach(edge => edge.endCursor = endCursor); // Stage documents for page creation
 
-    var _loop = function _loop(_fieldName) {
-      var field = typeFields[_fieldName];
+    documents = [...documents, ...edges];
 
-      if (field.type === typeMap.PRISMIC_Json && sharpKeys.some(function (re) {
-        return re instanceof RegExp ? re.test(_fieldName) : re === _fieldName;
-      })) {
-        typeResolver["".concat(_fieldName, "Sharp")] = {
+    if (response.pageInfo.hasNextPage) {
+      const newEndCursor = response.pageInfo.endCursor;
+      await createPagesForType(page, lang, newEndCursor, documents);
+    } else {
+      createDocumentPreviewPage(createPage, page, lang);
+      createDocumentPages(createPage, documents, options, page);
+    }
+  } // Prepare to create all the pages
+
+
+  const pages = options.pages || [];
+  const pageCreators = []; // Create pageCreator promises for each page/language combination
+
+  pages.forEach(page => {
+    const langs = page.langs || options.langs || options.defaultLang && [options.defaultLang];
+
+    if (langs) {
+      langs.forEach(lang => pageCreators.push(createPagesForType(page, lang)));
+    } else {
+      pageCreators.push(createPagesForType(page));
+    }
+  }); // Run all pageCreators simultaneously
+
+  await Promise.all(pageCreators);
+};
+
+exports.createResolvers = ({
+  actions,
+  cache,
+  createNodeId,
+  createResolvers,
+  store,
+  reporter
+}, {
+  sharpKeys = [/image|photo|picture/]
+}) => {
+  const {
+    createNode
+  } = actions;
+  const state = store.getState();
+  const [prismicSchema = {}] = state.schemaCustomization.thirdPartySchemas;
+  const typeMap = prismicSchema._typeMap;
+  const resolvers = {};
+
+  for (const typeName in typeMap) {
+    const typeEntry = typeMap[typeName];
+    const typeFields = typeEntry && typeEntry.getFields && typeEntry.getFields() || {};
+    const typeResolver = {};
+
+    for (const fieldName in typeFields) {
+      const field = typeFields[fieldName];
+
+      if (field.type === typeMap.PRISMIC_Json && sharpKeys.some(re => re instanceof RegExp ? re.test(fieldName) : re === fieldName)) {
+        typeResolver[`${fieldName}Sharp`] = {
           type: 'File',
           args: {
             crop: {
               type: typeMap.String
             }
           },
-          resolve: function resolve(source, args) {
-            var obj = source && source[_fieldName] || {};
-            var url = args.crop ? obj[args.crop] && obj[args.crop].url : obj.url;
+
+          resolve(source, args) {
+            const obj = source && source[fieldName] || {};
+            const url = args.crop ? obj[args.crop] && obj[args.crop].url : obj.url;
 
             if (url) {
-              return (0, _gatsbySourceFilesystem.createRemoteFileNode)({
-                url: url,
-                store: store,
-                cache: cache,
-                createNode: createNode,
-                createNodeId: createNodeId,
-                reporter: reporter
+              return createRemoteFileNode({
+                url,
+                store,
+                cache,
+                createNode,
+                createNodeId,
+                reporter
               });
             }
 
             return null;
           }
+
         };
       }
-    };
-
-    for (var _fieldName in typeFields) {
-      _loop(_fieldName);
     }
 
     if (Object.keys(typeResolver).length) {
-      resolvers[_typeName] = typeResolver;
+      resolvers[typeName] = typeResolver;
     }
   }
 

@@ -22,7 +22,7 @@
     "utils"
   ],
   "scripts": {
-    "build": "tsc --emitDeclarationOnly && babel src --out-dir ./ --extensions '.ts,.tsx'",
+    "build": "tsc --emitDeclarationOnly && babel src --out-dir ./ --extensions '.ts,.tsx' --presets @babel/preset-typescript",
     "clean": "rimraf {interfaces,types,components,utils,*.js}",
     "prepare": "yarn clean && cross-env NODE_ENV=production yarn build",
     "start": "babel src --out-dir ./ --extensions '.ts,.tsx' --watch"
@@ -31,7 +31,6 @@
   "dependencies": {
     "apollo-boost": "^0.3.1",
     "apollo-link-context": "^1.0.17",
-    "gatsby-image": "^2.2.4",
     "gatsby-source-filesystem": "^2.1.2",
     "gatsby-source-graphql": "^2.0.15",
     "gatsby-source-graphql-universal": "^3.1.6",
