@@ -24,7 +24,6 @@
   "scripts": {
     "build": "tsc --emitDeclarationOnly && babel src --out-dir ./ --extensions '.ts,.tsx'",
     "clean": "rimraf {interfaces,types,components,utils,*.js}",
-    "prepare": "yarn clean && cross-env NODE_ENV=production yarn build",
     "start": "babel src --out-dir ./ --extensions '.ts,.tsx' --watch"
   },
   "types": "./types/index.d.ts",
