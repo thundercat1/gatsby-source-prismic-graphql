@@ -1,24 +1,22 @@
-"use strict";
+import React from 'react';
 
-var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
-
-var _react = _interopRequireDefault(require("react"));
-
-exports.onRenderBody = function (_ref, options) {
-  var setHeadComponents = _ref.setHeadComponents;
-  var components = [_react.default.createElement("script", {
-    key: "prismic-config",
-    dangerouslySetInnerHTML: {
-      __html: "\n            window.prismic = {\n              endpoint: 'https://".concat(options.repositoryName, ".prismic.io/api/v2',\n            };\n            window.prismicGatsbyOptions = ").concat(JSON.stringify(options), ";\n          ")
-    }
-  })];
+exports.onRenderBody = ({
+  setHeadComponents
+}, options) => {
+  const accessToken = options.previews ? null : options.accessToken;
+  const components = [<script key="prismic-config" dangerouslySetInnerHTML={{
+    __html: `
+            window.prismic = {
+              endpoint: 'https://${options.repositoryName}.prismic.io/api/v2',
+            };
+            window.prismicGatsbyOptions = ${JSON.stringify({ ...options,
+      accessToken
+    })};
+          `
+  }} />];
 
   if (options.omitPrismicScript !== true) {
-    components.push(_react.default.createElement("script", {
-      key: "prismic-script",
-      type: "text/javascript",
-      src: "//static.cdn.prismic.io/prismic.min.js"
-    }));
+    components.push(<script key="prismic-script" type="text/javascript" src="//static.cdn.prismic.io/prismic.min.js" />);
   }
 
   setHeadComponents(components);
